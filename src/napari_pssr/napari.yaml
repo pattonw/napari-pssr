@@ -13,16 +13,13 @@ contributions:
       title: Save image data with napari PSSR
     - id: napari-pssr.make_sample_data
       python_name: napari_pssr._sample_data:make_sample_data
-      title: Load sample data from napari PSSR 
-    - id: napari-pssr.make_qwidget
-      python_name: napari_pssr._widget:ExampleQWidget
-      title: Make example QWidget
-    - id: napari-pssr.make_magic_widget
-      python_name: napari_pssr._widget:example_magic_widget
-      title: Make example magic widget
-    - id: napari-pssr.make_func_widget
-      python_name: napari_pssr._widget:example_function_widget
-      title: Make example function widget 
+      title: Load sample data from napari PSSR
+    - id: napari-pssr.make_train_pssr_widget
+      python_name: napari_pssr.widget:train_pssr_widget
+      title: Make train pssr widget
+    - id: napari-pssr.make_predict_pssr_widget
+      python_name: napari_pssr.widget:predict_pssr_widget
+      title: Make predict pssr widget
   readers:
     - command: napari-pssr.get_reader
       accepts_directories: false
@@ -39,10 +36,7 @@ contributions:
       display_name: napari PSSR
       key: unique_id.1 
   widgets:
-    - command: napari-pssr.make_qwidget
-      display_name: Example QWidget
-    - command: napari-pssr.make_magic_widget
-      display_name: Example Magic Widget
-    - command: napari-pssr.make_func_widget
-      autogenerate: true
-      display_name: Example Function Widget 
+    - command: napari-pssr.make_train_pssr_widget
+      display_name: Train pssr Widget
+    - command: napari-pssr.make_predict_pssr_widget
+      display_name: Predict pssr Widget
