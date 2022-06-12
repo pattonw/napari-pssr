@@ -1,23 +1,12 @@
-from napari_pssr import (
-    train_pssr_widget,
-    predict_pssr_widget,
+from napari_pssr.widgets.pssr import (
+    ModelWidget
 )
 import numpy as np
 
 
 def test_train_pssr_widget(make_napari_viewer, capsys):
     viewer = make_napari_viewer()
-    layer = viewer.add_image(np.random.random((100, 100)))
-
-    my_widget = train_pssr_widget()
-
-    my_widget(viewer.layers[0])
+    model_widget = ModelWidget(viewer)
+    my_widget = model_widget.create_train_widget(viewer)
 
 
-def test_predict_pssr_widget(make_napari_viewer, capsys):
-    viewer = make_napari_viewer()
-    layer = viewer.add_image(np.random.random((100, 100)))
-
-    my_widget = predict_pssr_widget()
-
-    my_widget(viewer.layers[0])

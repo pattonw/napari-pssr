@@ -2,41 +2,22 @@ name: napari-pssr
 display_name: napari PSSR
 contributions:
   commands:
-    - id: napari-pssr.get_reader
-      python_name: napari_pssr._reader:napari_get_reader
-      title: Open data with napari PSSR
-    - id: napari-pssr.write_multiple
-      python_name: napari_pssr._writer:write_multiple
-      title: Save multi-layer data with napari PSSR
-    - id: napari-pssr.write_single_image
-      python_name: napari_pssr._writer:write_single_image
-      title: Save image data with napari PSSR
-    - id: napari-pssr.make_sample_data
-      python_name: napari_pssr._sample_data:make_sample_data
-      title: Load sample data from napari PSSR
-    - id: napari-pssr.make_train_pssr_widget
-      python_name: napari_pssr.widget:train_pssr_widget
-      title: Make train pssr widget
-    - id: napari-pssr.make_predict_pssr_widget
-      python_name: napari_pssr.widget:predict_pssr_widget
-      title: Make predict pssr widget
-  readers:
-    - command: napari-pssr.get_reader
-      accepts_directories: false
-      filename_patterns: ['*.npy'] 
-  writers:
-    - command: napari-pssr.write_multiple
-      layer_types: ['image*','labels*']
-      filename_extensions: []
-    - command: napari-pssr.write_single_image
-      layer_types: ['image']
-      filename_extensions: ['.npy'] 
+    - id: napari-pssr.make_pssr_widget
+      python_name: napari_pssr.widgets.pssr:ModelWidget
+      title: Make model widget
+    - id: napari-pssr.sample_epithelial
+      python_name: napari_pssr.sample_data:sample_epithelial
+      title: Load sample data from napari pssr
+    - id: napari-pssr.sample_lightsheet
+      python_name: napari_pssr.sample_data:sample_lightsheet
+      title: Load sample data from napari pssr
   sample_data:
-    - command: napari-pssr.make_sample_data
-      display_name: napari PSSR
-      key: unique_id.1 
+    - command: napari-pssr.sample_epithelial
+      display_name: Epithelial sample
+      key: epithelial_sample.0
+    - command: napari-pssr.sample_lightsheet
+      display_name: Lightsheet sample
+      key: lightsheet_sample.0
   widgets:
-    - command: napari-pssr.make_train_pssr_widget
-      display_name: Train pssr Widget
-    - command: napari-pssr.make_predict_pssr_widget
-      display_name: Predict pssr Widget
+    - command: napari-pssr.make_pssr_widget
+      display_name: PSSR Widget
