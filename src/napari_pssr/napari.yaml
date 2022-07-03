@@ -5,19 +5,13 @@ contributions:
     - id: napari-pssr.make_pssr_widget
       python_name: napari_pssr.widgets.pssr:ModelWidget
       title: Make model widget
-    - id: napari-pssr.sample_epithelial
-      python_name: napari_pssr.sample_data:sample_epithelial
-      title: Load sample data from napari pssr
-    - id: napari-pssr.sample_lightsheet
-      python_name: napari_pssr.sample_data:sample_lightsheet
+    - id: napari-pssr.sample_lr_em
+      python_name: napari_pssr.sample_data:sample_lr_em
       title: Load sample data from napari pssr
   sample_data:
-    - command: napari-pssr.sample_epithelial
-      display_name: Epithelial sample
+    - command: napari-pssr.sample_lr_em
+      display_name: 8nm EM
       key: epithelial_sample.0
-    - command: napari-pssr.sample_lightsheet
-      display_name: Lightsheet sample
-      key: lightsheet_sample.0
   widgets:
     - command: napari-pssr.make_pssr_widget
       display_name: PSSR Widget
