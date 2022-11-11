@@ -1,99 +1,75 @@
 import bioimageio.core
-
+import os
+import numpy as np
 import torch
 
-from pathlib import Path
+
+# first new model: add thresholding of outputs as post-processing
+# the convenience function `build_model` creates a biomageio model spec compatible package (=zipped folder)
+from bioimageio.core.build_spec import build_model
+
+# create a subfolder to store the files for the new model
+model_root = "./models"
+os.makedirs(model_root, exist_ok=True)
+
+# create the expected output tensor (= outputs thresholded at 0.5)
+new_output = np.random.randn(1, 3, 10, 10)
+new_output_path = f"{model_root}/new_test_output.npy"
+np.save(new_output_path, new_output)
+new_input = np.random.randn(1, 3, 10, 10)
+new_input_path = f"{model_root}/new_test_input.npy"
+np.save(new_input_path, new_input)
+
+# add thresholding as post-processing procedure to our model
+preprocessing = []
+postprocessing = []
+
+# get the model architecture
+# note that this is only necessary for pytorch state dict models
+model_source = "scripts/unet.py:Learner"
 
 
-model_file = "scripts/baseline_pssr_512_torch.model"
-model = torch.load(model_file)
+# the name of the new model and where to save the zipped model package
+name = "baseline_pssr_1024"
+zip_path = os.path.join(model_root, f"{name}.zip")
 
-print(model)
-raise Exception()
+cite = [{"text": "Test", "doi": "NA"}]
 
-RDF = None
+# the axes descriptions for the inputs / outputs
+input_axes = ["bcyx"]
+output_axes = ["bcyx"]
 
-# get architecture source
-def get_architecture_source():
-    raw_resource = bioimageio.core.load_raw_resource_description(RDF)
-    model_source = raw_resource.weights["pytorch_state_dict"].architecture
-    # download the source file if necessary
-    source_file = bioimageio.core.resource_io.utils.resolve_source(
-        model_source.source_file
-    )
-    # if the source file path does not exist, try combining it with the root path of the model
-    if not Path(source_file).exists():
-        source_file = Path(
-            raw_resource.root_path,
-            Path(source_file).relative_to(Path(".").absolute()),
-        )
-    assert Path(source_file).exists(), source_file
-    class_name = model_source.callable_name
-    return f"{source_file}:{class_name}"
-
+# the pytorch_state_dict weight file
+weight_file = "scripts/baseline_pssr_1024.pt"
+model = torch.load(f"scripts/{name}.mdl")
+torch.save({f"model.{k}": v for k, v in model.state_dict().items()}, weight_file)
 
 # the path to save the new model with torchscript weights
-zip_path = Path("PSSR_8nm_er.zip")
-assert zip_path.name.endswith(".zip"), "Must save model in a zip"
-
-preprocessing = [
-    [{"name": prep.name, "kwargs": prep.kwargs} for prep in inp.preprocessing]
-    for inp in None.inputs
-    if inp.preprocessing != missing
-]
-postprocessing = [
-    [
-        {"name": post.name, "kwargs": post.kwargs}
-        for post in outp.postprocessing
-    ]
-    if outp.postprocessing != missing
-    else None
-    for outp in None.outputs
-]
-citations = [
-    {k: v for k, v in dataclasses.asdict(citation).items() if v != missing}
-    for citation in None.cite
-]
-authors = [dataclasses.asdict(author) for author in None.authors]
-if (
-    self.save_widget.author.value is not None
-    and len(self.save_widget.author.value) > 0
-):
-    authors += [{"name": self.save_widget.author.value}]
-name = (
-    self.save_widget.model_name.value
-    if self.save_widget.model_name.value is not None
-    and len(self.save_widget.model_name.value) > 0
-    else None.name
-)
-
-kwargs = {
-    "weight_uri": None.weights["pytorch_state_dict"].source,
-    "test_inputs": None.test_inputs,
-    "test_outputs": None.test_outputs,
-    "input_axes": ["".join(inp.axes) for inp in None.inputs],
-    "input_min_shape": [inp.shape.min for inp in None.inputs],
-    "input_step": [inp.shape.step for inp in None.inputs],
-    "output_axes": ["".join(outp.axes) for outp in None.outputs],
-    "output_path": zip_path,
-    "name": name,
-    "description": f"{None.description}\nFinetuned with the napari-affinities plugin!",
-    "authors": authors,
-    "license": None.license,
-    "documentation": None.documentation,
-    "covers": None.covers,
-    "tags": None.tags,
-    "cite": citations,
-    "parent": None.parent,
-    "architecture": get_architecture_source(),
-    "model_kwargs": None.weights["pytorch_state_dict"].kwargs,
-    "preprocessing": preprocessing,
-    "postprocessing": postprocessing,
-    "training_data": None.training_data
-    if None.training_data != missing
-    else None,
-    "config": None.config,
-}
+zip_path = f"{model_root}/{name}.zip"
 
 # build the model! it will be saved to 'zip_path'
-new_model_raw = build_model(**kwargs)
+new_model_raw = build_model(
+    weight_uri=weight_file,
+    test_inputs=[new_input_path],
+    test_outputs=[new_output_path],
+    input_axes=input_axes,
+    input_names=["pssr"],
+    input_min_shape=[[1, 1, 128, 128]],
+    input_step=[[0, 0, 0, 0]],
+    output_reference=["pssr"],
+    output_axes=output_axes,
+    output_scale=[[1, 1, 4, 4]],
+    output_offset=[[0, 0, 0, 0]],
+    halo=[[0, 0, 0, 0]],
+    output_path=zip_path,
+    name=name,
+    description="pssr model",
+    authors=[{"name": "Jane Doe"}],
+    documentation="scripts/docs.md",
+    tags=["pssr"],
+    cite=cite,
+    architecture=model_source,
+    model_kwargs={"learner": "baseline_pssr_1024.mdl"},
+    attachments={"files": ["scripts/baseline_pssr_1024.mdl"]},
+)
+

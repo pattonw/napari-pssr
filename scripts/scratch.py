@@ -1,4 +1,4 @@
-from napari_affinities.widgets.affinities import ModelWidget
+from napari_pssr.widgets.pssr import ModelWidget
 
 import napari
 
