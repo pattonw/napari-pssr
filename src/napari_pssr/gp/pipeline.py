@@ -7,7 +7,6 @@ from .nodes import (
 )
 
 import gunpowder as gp
-from lsd.gp import AddLocalShapeDescriptor
 
 import numpy as np
 from bioimageio.core.resource_io.nodes import Model
@@ -20,24 +19,21 @@ import math
 LayerName = str
 LayerType = str
 
+
 @dataclass
 class GunpowderParameters:
-    lsd_sigma: int = 5
-    intensity_scale_min: float = 0.5
-    intensity_scale_max: float = 2.0
-    intensity_shift_min: float = -0.5
-    intensity_shift_max: float = 0.5
-    gausian_noise_mean: float = 0.0
-    gausian_noise_var: float = 0.2
+    gaussian_noise_mean: float = 0.0
+    gaussian_noise_var: float = 0.01
+    salt_noise: float = 0.02
+    pepper_noise: float = 0.02
     elastic_control_point_spacing: int = 50
     elastic_control_point_sigma: int = 10
-    zoom_min: float = 0.8
-    zoom_max: float = 1.2
+    downsample_factor: int = 4
     rotation: bool = True
     mirror: bool = True
     transpose: bool = True
     num_cpu_processes: int = 1
-    batch_size: int = 1
+    batch_size: int = 4
 
 
 class PipelineDataGenerator:
@@ -94,7 +90,9 @@ class PipelineDataGenerator:
 
         return arrays, snapshot_arrays
 
-    def next_validation(self) -> List[Tuple[np.ndarray, Dict[str, Any], LayerType]]:
+    def next_validation(
+        self,
+    ) -> List[Tuple[np.ndarray, Dict[str, Any], LayerType]]:
         request = gp.BatchRequest()
         request_template = self.val_request
         for k, v in request_template.items():
@@ -119,69 +117,48 @@ class PipelineDataGenerator:
 
 
 @contextmanager
-def build_pipeline(raw, gt, mask, model: Model, parameters: GunpowderParameters):
+def build_pipeline(raw, mask, model: Model, parameters: GunpowderParameters):
 
     outputs = model.outputs
     metadata_output_names = [output.name.lower() for output in outputs]
     output_names = [x for x in metadata_output_names]
-    if "affinities" not in output_names:
-        output_names[0] = "affinities"
+    if "pssr" not in output_names:
+        output_names[0] = "pssr"
         if len(output_names) > 1:
-            output_names[1] = "fgbg"
-        if len(output_names) > 2:
-            output_names[2] = "lsds"
-        if len(output_names) > 3:
             raise ValueError(
                 f"Don't know how to handle outputs: {metadata_output_names}"
             )
     try:
-        affs_index = output_names.index("affinities")
+        pssr_index = output_names.index("pssr")
     except ValueError as e:
         raise ValueError(
-            'This model does not provide an output with name "affinities"! '
+            'This model does not provide an output with name "pssr"! '
             f"{model.name} only provides: {output_names}"
         )
-    try:
-        lsd_index = output_names.index("lsds")
-        lsds = True
-    except ValueError:
-        lsds = False
-    try:
-        fgbg_index = output_names.index("fgbg")
-        fgbg = True
-    except ValueError:
-        fgbg = False
 
     # read metadata from model
-    offsets = model.config["mws"]["offsets"]
-    dims = len(offsets[0])
+    dims = 2
     spatial_axes = ["time", "z", "y", "x"][-dims:]
 
     input_shape = gp.Coordinate(model.inputs[0].shape.min[-dims:])
     output_shape = gp.Coordinate(input_shape)
 
     # get voxel sizes TODO: read from metadata?
-    voxel_size = gp.Coordinate((1,) * input_shape.dims())
+    voxel_size = gp.Coordinate((1,) * input_shape.dims)
 
-    # witch to world units:
+    # switch to world units:
     input_size = voxel_size * input_shape
     output_size = voxel_size * output_shape
     context = (input_size - output_size) / 2
 
     # padding of groundtruth/mask
     # without padding you random sampling won't be uniform over the whole volume
-    padding = output_size  # TODO: add sampling for extra lsd/affinities context
+    padding = output_size
 
     # define keys:
     raw_key = gp.ArrayKey("RAW")
-    gt_key = gp.ArrayKey("GT")
+    crap_key = gp.ArrayKey("CRAPIFIED")
     mask_key = gp.ArrayKey("MASK")
-    affinity_key = gp.ArrayKey("AFFINITY")
-    affinity_mask_key = gp.ArrayKey("AFFINITY_MASK")
-    lsd_key = gp.ArrayKey("LSD")
-    lsd_mask_key = gp.ArrayKey("LSD_MASK")
-    fgbg_key = gp.ArrayKey("FGBG")
-    fgbg_mask_key = gp.ArrayKey("FGBG_MASK")
     training_mask_key = gp.ArrayKey("TRAINING_MASK_KEY")
 
     # Get source nodes:
@@ -189,19 +166,19 @@ def build_pipeline(raw, gt, mask, model: Model, parameters: GunpowderParameters)
     val_raw_source = NapariImageSource(raw, raw_key)
     # Pad raw infinitely with 0s. This is to avoid failing to train on any of
     # the ground truth because there wasn't enough raw context.
-    raw_source += gp.Pad(raw_key, None, 0)
-    val_raw_source += gp.Pad(raw_key, None, 0)
 
-    gt_source = NapariLabelsSource(gt, gt_key)
-    val_gt_source = NapariLabelsSource(gt, gt_key)
-    with gp.build(val_gt_source):
-        val_roi = gp.Roi(val_gt_source.spec[gt_key].roi.get_offset(), output_size)
-        total_roi = val_gt_source.spec[gt_key].roi.copy()
-        training_mask_spec = val_gt_source.spec[gt_key].copy()
+    with gp.build(val_raw_source):
+        val_roi = gp.Roi(
+            val_raw_source.spec[raw_key].roi.get_offset(), output_size
+        )
+        total_roi = val_raw_source.spec[raw_key].roi.copy()
+        training_mask_spec = val_raw_source.spec[raw_key].copy()
 
     shape = total_roi.get_shape() / voxel_size
     training_mask = np.ones(shape, dtype=training_mask_spec.dtype)
-    val_slices = [slice(0, val_shape) for val_shape in val_roi.get_shape() / voxel_size]
+    val_slices = [
+        slice(0, val_shape) for val_shape in val_roi.get_shape() / voxel_size
+    ]
     training_mask[tuple(val_slices)] = 0
 
     training_mask_source = NpArraySource(
@@ -212,91 +189,73 @@ def build_pipeline(raw, gt, mask, model: Model, parameters: GunpowderParameters)
         mask_source = NapariLabelsSource(mask, mask_key)
         val_mask_source = NapariLabelsSource(mask, mask_key)
     else:
-        with gp.build(gt_source):
-            mask_spec = gt_source.spec[gt_key]
+        with gp.build(raw_source):
+            mask_spec = raw_source.spec[raw_key]
             mask_spec.dtype = bool
-            mask_source = OnesSource(gt_source.spec[gt_key], mask_key)
-            val_mask_source = OnesSource(gt_source.spec[gt_key].copy(), mask_key)
+            mask_source = OnesSource(raw_source.spec[raw_key], mask_key)
+            val_mask_source = OnesSource(
+                raw_source.spec[raw_key].copy(), mask_key
+            )
 
-    # Pad gt/mask with just enough to make sure random sampling is uniform
-    gt_source += gp.Pad(gt_key, padding, 0)
-    val_gt_source += gp.Pad(gt_key, padding, 0)
+    # Pad mask with just enough to make sure random sampling is uniform
     mask_source += gp.Pad(mask_key, padding, 0)
     val_mask_source += gp.Pad(mask_key, padding, 0)
 
-    val_pipeline = (val_raw_source, val_gt_source, val_mask_source) + gp.MergeProvider()
+    val_pipeline = (val_raw_source, val_mask_source) + gp.MergeProvider()
     pipeline = (
-        (raw_source, gt_source, mask_source, training_mask_source)
+        (raw_source, mask_source, training_mask_source)
         + gp.MergeProvider()
         + gp.RandomLocation(min_masked=1, mask=training_mask_key)
     )
+    pipeline += gp.Normalize(raw_key)
+    val_pipeline += gp.Normalize(raw_key)
+
+    val_pipeline += gp.Resample(
+        raw_key,
+        voxel_size * parameters.downsample_factor,
+        crap_key,
+        interp_order=1,
+    )
+    val_pipeline += gp.Pad(crap_key, None)
+    pipeline += gp.Resample(
+        raw_key,
+        voxel_size * parameters.downsample_factor,
+        crap_key,
+        interp_order=1,
+    )
+    pipeline += gp.Pad(crap_key, None)
 
     if parameters.mirror or parameters.transpose:
         pipeline += gp.SimpleAugment(
             mirror_only=[1 if parameters.mirror else 0 for _ in range(dims)],
-            transpose_only=[1 if parameters.transpose else 0 for _ in range(dims)],
+            transpose_only=[
+                1 if parameters.transpose else 0 for _ in range(dims)
+            ],
         )
-    pipeline += gp.ElasticAugment(
-        control_point_spacing=[
-            parameters.elastic_control_point_spacing for _ in range(dims)
-        ],
-        jitter_sigma=[parameters.elastic_control_point_sigma for _ in range(dims)],
-        rotation_interval=(0, 2 * math.pi if parameters.rotation else 0),
-        scale_interval=(parameters.zoom_min, parameters.zoom_max),
+    pipeline += gp.NoiseAugment(
+        crap_key,
+        mean=parameters.gaussian_noise_mean,
+        var=parameters.gaussian_noise_var,
+        mode="gaussian",
     )
     pipeline += gp.NoiseAugment(
-        raw_key, mean=parameters.gausian_noise_mean, var=parameters.gausian_noise_var
+        crap_key,
+        amount=parameters.salt_noise,
+        mode="salt",
     )
-
-    # Generate Affinities
-    pipeline += gp.AddAffinities(
-        offsets,
-        gt_key,
-        affinity_key,
-        labels_mask=mask_key,
-        affinities_mask=affinity_mask_key,
+    pipeline += gp.NoiseAugment(
+        crap_key,
+        amount=parameters.pepper_noise,
+        mode="pepper",
     )
-    val_pipeline += gp.AddAffinities(
-        offsets,
-        gt_key,
-        affinity_key,
-        labels_mask=mask_key,
-        affinities_mask=affinity_mask_key,
-    )
-
-    if lsds:
-        pipeline += AddLocalShapeDescriptor(
-            gt_key,
-            lsd_key,
-            mask=lsd_mask_key,
-            sigma=parameters.lsd_sigma,
-        )
-        val_pipeline += AddLocalShapeDescriptor(
-            gt_key,
-            lsd_key,
-            mask=lsd_mask_key,
-            sigma=parameters.lsd_sigma,
-        )
-    if fgbg:
-        pipeline += Binarize(
-            gt_key,
-            fgbg_key,
-        )
-        val_pipeline += Binarize(
-            gt_key,
-            fgbg_key,
-        )
 
     # Trainer attributes:
-    if parameters.num_cpu_processes > 1:
+    if parameters.num_cpu_processes > 1 and False:
         pipeline += gp.PreCache(num_workers=parameters.num_cpu_processes)
 
     # add channel dimensions
-    pipeline += gp.Unsqueeze([raw_key, gt_key, mask_key])
-    val_pipeline += gp.Unsqueeze([raw_key, gt_key, mask_key])
-    if fgbg:
-        pipeline += gp.Unsqueeze([fgbg_key])
-        val_pipeline += gp.Unsqueeze([fgbg_key])
+    pipeline += gp.Unsqueeze([raw_key, crap_key, mask_key])
+    val_pipeline += gp.Unsqueeze([raw_key, crap_key, mask_key])
 
     # stack to create a batch dimension
     pipeline += gp.Stack(parameters.batch_size)
@@ -304,49 +263,23 @@ def build_pipeline(raw, gt, mask, model: Model, parameters: GunpowderParameters)
 
     request = gp.BatchRequest()
     request.add(raw_key, input_size)
-    request.add(affinity_key, output_size)
-    request.add(affinity_mask_key, output_size)
+    request.add(crap_key, output_size)
     request.add(training_mask_key, output_size)
-    if lsds:
-        request.add(lsd_key, output_size)
-        request.add(lsd_mask_key, output_size)
-    if fgbg:
-        request.add(fgbg_key, output_size)
-        request.add(mask_key, output_size)
 
     val_request = gp.BatchRequest()
     val_request[raw_key] = gp.ArraySpec(roi=val_roi.grow(context, context))
-    val_request[affinity_key] = gp.ArraySpec(roi=val_roi)
-    val_request[affinity_mask_key] = gp.ArraySpec(roi=val_roi)
-    if lsds:
-        val_request[lsd_key] = gp.ArraySpec(roi=val_roi)
-        val_request[lsd_mask_key] = gp.ArraySpec(roi=val_roi)
-    if fgbg:
-        val_request[fgbg_key] = gp.ArraySpec(roi=val_roi)
-        val_request[mask_key] = gp.ArraySpec(roi=val_roi)
+    val_request[crap_key] = gp.ArraySpec(roi=val_roi.grow(context, context))
 
     snapshot_request = gp.BatchRequest()
     snapshot_request.add(raw_key, input_size)
-    snapshot_request.add(affinity_key, output_size)
-    snapshot_request.add(affinity_mask_key, output_size)
+    snapshot_request.add(crap_key, input_size)
     snapshot_request.add(training_mask_key, output_size)
-    if lsds:
-        snapshot_request.add(lsd_key, output_size)
-        snapshot_request.add(lsd_mask_key, output_size)
-    if fgbg:
-        snapshot_request.add(fgbg_key, output_size)
     snapshot_request.add(mask_key, output_size)
-    snapshot_request.add(gt_key, output_size)
 
     keys = [
+        (crap_key, "image"),
         (raw_key, "image"),
-        (affinity_key, "labels"),
-        (affinity_mask_key, "labels"),
-        (lsd_key, "image"),
-        (lsd_mask_key, "labels"),
-        (fgbg_key, "labels"),
         (mask_key, "labels"),
-        (gt_key, "labels"),
     ]
 
     with gp.build(pipeline):
