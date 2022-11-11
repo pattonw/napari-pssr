@@ -62,7 +62,7 @@ class NapariImageSource(gp.BatchProvider):
 
         offset = gp.Coordinate(image.metadata.get("offset", (0,) * ndims))
         voxel_size = gp.Coordinate(image.metadata.get("resolution", (1,) * ndims))
-        shape = gp.Coordinate(image.data.shape[-offset.dims() :])
+        shape = gp.Coordinate(image.data.shape[-offset.dims :])
 
         return gp.ArraySpec(
             roi=gp.Roi(offset, voxel_size * shape),

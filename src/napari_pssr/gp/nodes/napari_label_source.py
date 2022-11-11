@@ -62,7 +62,7 @@ class NapariLabelsSource(gp.BatchProvider):
 
         offset = gp.Coordinate(labels.metadata.get("offset", (0,) * ndims))
         voxel_size = gp.Coordinate(labels.metadata.get("resolution", (1,) * ndims))
-        shape = gp.Coordinate(labels.data.shape[-offset.dims() :])
+        shape = gp.Coordinate(labels.data.shape[-offset.dims :])
 
         return gp.ArraySpec(
             roi=gp.Roi(offset, voxel_size * shape),
