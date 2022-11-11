@@ -2,18 +2,35 @@ import tifffile
 
 from pathlib import Path
 
-LR_8NM_EM = Path(__file__).parent / "sample_data/LR/8nm_em_sample/00.tif"
+LR_8NM_EM = "/home/skar/Downloads/testing/LR/semi-synthetic_tSEM/semisynth_tSEM_test_LR_56.tif"
+HR_2NM_EM = "/home/skar/Downloads/testing/HR/semi-synthetic_tSEM/semisynth_tSEM_test_HR_56.tif"
 
 
-def sample_lr_em():
-    image = tifffile.imread(LR_8NM_EM)
+def lr_em():
+    lr = tifffile.imread(LR_8NM_EM)
     return [
         (
-            image[:],
+            lr[:, :],
             {
-                "name": "Raw",
+                "name": "Low Res",
                 "metadata": {"axes": ["y", "x"]},
+                "scale": [8, 8],
             },
             "image",
         )
+    ]
+
+
+def hr_em():
+    hr = tifffile.imread(HR_2NM_EM)
+    return [
+        (
+            hr[:, :],
+            {
+                "name": "High Res",
+                "metadata": {"axes": ["y", "x"]},
+                "scale": [2, 2],
+            },
+            "image",
+        ),
     ]
