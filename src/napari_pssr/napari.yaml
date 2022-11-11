@@ -5,13 +5,19 @@ contributions:
     - id: napari-pssr.make_pssr_widget
       python_name: napari_pssr.widgets.pssr:ModelWidget
       title: Make model widget
-    - id: napari-pssr.sample_lr_em
-      python_name: napari_pssr.sample_data:sample_lr_em
-      title: Load sample data from napari pssr
+    - id: napari-pssr.lr_em
+      python_name: napari_pssr.sample_data:lr_em
+      title: Load low res em for pssr
+    - id: napari-pssr.hr_em
+      python_name: napari_pssr.sample_data:hr_em
+      title: Load high res em for pssr comparison
   sample_data:
-    - command: napari-pssr.sample_lr_em
+    - command: napari-pssr.lr_em
       display_name: 8nm EM
-      key: epithelial_sample.0
+      key: lr_em.0
+    - command: napari-pssr.hr_em
+      display_name: 2nm EM
+      key: hr_em.0
   widgets:
     - command: napari-pssr.make_pssr_widget
       display_name: PSSR Widget
