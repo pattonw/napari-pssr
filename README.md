@@ -23,10 +23,11 @@ https://napari.org/plugins/stable/index.html
 
 ## Installation
 
+<!--
 You can install `napari-pssr` via [pip]:
 
     pip install napari-pssr
-
+-->
 
 
 To install latest development version :
