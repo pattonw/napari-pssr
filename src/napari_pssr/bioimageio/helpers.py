@@ -48,11 +48,17 @@ def update_weights(model, weights):
 
     # add thresholding as post-processing procedure to our model
     preprocessing = [
-        [{"name": prep.name, "kwargs": prep.kwargs} for prep in inp.preprocessing]
+        [
+            {"name": prep.name, "kwargs": prep.kwargs}
+            for prep in inp.preprocessing
+        ]
         for inp in model_resource.inputs
     ]
     postprocessing = [
-        [{"name": prep.name, "kwargs": prep.kwargs} for prep in inp.postprocessing]
+        [
+            {"name": prep.name, "kwargs": prep.kwargs}
+            for prep in inp.postprocessing
+        ]
         for inp in model_resource.outputs
     ]
 
@@ -109,7 +115,9 @@ def update_weights(model, weights):
         output_path=zip_path,
         name=name,
         description=f"{model_resource.description} (Finetuned with Napari-affinities plugin)",
-        authors=[{"name": "Jane Doe"}],  # TODO: let users plug in their own name
+        authors=[
+            {"name": "Jane Doe"}
+        ],  # TODO: let users plug in their own name
         license="CC-BY-4.0",  # TODO: configurable?
         documentation=model_resource.documentation,
         covers=[str(cover) for cover in model_resource.covers],
