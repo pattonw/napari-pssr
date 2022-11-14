@@ -34,6 +34,15 @@ To install latest development version :
 
     pip install git+https://github.com/pattonw/napari-pssr.git
 
+## Model download
+
+A sample model can be downloaded from `https://github.com/pattonw/model-specs/tree/main/pssr`. This model comes with some restrictive dependencies. To use follow these steps.
+1) install this plugin following the directions provided above
+2) install bioimageio.core via `pip install bioimageio.core` or `conda install -c conda-forge bioimageio.core`
+3) `pip install fastai==1.0.55 tifffile libtiff czifile scikit-image`
+4) `pip uninstall torch torchvision` (may need multiple runs)
+5) `conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch`
+6) `pip install pillow==6.1.0`
 
 ## Contributing
 
