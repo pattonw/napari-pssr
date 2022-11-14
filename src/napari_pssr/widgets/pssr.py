@@ -400,86 +400,28 @@ class ModelWidget(QWidget):
         )
         while len(raw_data.shape) < ndim + 2:
             raw_data = raw_data.reshape((1, *raw_data.shape))
-    
-        device = torch.device("cuda")
-        module = get_torch_module(model).half().to(device)
-        context = 16
-        padded_tile_size = 128
-        tile_size = padded_tile_size - 2 * context
-        scale_factor = 4
 
-        with torch.no_grad():
-            raw_data = (torch.from_numpy(raw_data).half().to(device) / 255)
-            raw_data = raw_data.repeat_interleave(3, dim=1)
+        with create_prediction_pipeline(
+            bioimageio_model=model, devices=["cuda"]
+        ) as pp:
+            # [0] to access first input array/output array
+            pred_data = DataArray(raw_data, dims=tuple(pp.input_specs[0].axes))
+            try:
+                outputs = list(
+                    predict_with_tiling(pp, pred_data, True, verbose=True)
+                )
+            except NotImplementedError as e:
+                outputs = list(pp(pred_data))
 
-            padding = 0
-            outputs = torch.zeros_like(raw_data)
-            outputs = outputs.repeat_interleave(scale_factor, dim=-1)
-            outputs = outputs.repeat_interleave(scale_factor, dim=-2)
-            for y_tile in range(
-                (raw_data.shape[-2] + tile_size - 1) // tile_size
-            ):
-                for x_tile in range(
-                    (raw_data.shape[-1] + tile_size - 1) // tile_size
-                ):
-                    tile_raw = raw_data[
-                        :,
-                        :,
-                        max(y_tile * tile_size - context, 0) : min(
-                            (y_tile + 1) * tile_size + context,
-                            raw_data.shape[-2],
-                        ),
-                        max(x_tile * tile_size - context, 0) : min(
-                            (x_tile + 1) * tile_size + context,
-                            raw_data.shape[-1],
-                        ),
-                    ]
-                    pad_amount = (
-                        padded_tile_size - tile_raw.shape[-1]
-                        if x_tile == 0
-                        else 0,
-                        padded_tile_size - tile_raw.shape[-1]
-                        if x_tile != 0
-                        else 0,
-                        padded_tile_size - tile_raw.shape[-2]
-                        if y_tile == 0
-                        else 0,
-                        padded_tile_size - tile_raw.shape[-2]
-                        if y_tile != 0
-                        else 0,
-                    )
-                    padded_tile_raw = torch.nn.functional.pad(
-                        tile_raw, pad_amount, "constant", 0
-                    )
+        pssr = outputs[pssr_index].values
 
-                    tile_pred = module(padded_tile_raw)
-                    context_cropped_pred = torch.nn.functional.pad(
-                        tile_pred,
-                        [-max(context, pa) * scale_factor for pa in pad_amount],
-                        "constant",
-                        0,
-                    )
-                    y_start = max(
-                        y_tile * tile_size * scale_factor, 0
-                    )
-                    y_end = y_start + context_cropped_pred.shape[-2]
-                    x_start = max(
-                        (x_tile * tile_size) * scale_factor, 0
-                    )
-                    x_end = x_start + context_cropped_pred.shape[-1]
-                    outputs[
-                        :, :, y_start:y_end, x_start:x_end
-                    ] = context_cropped_pred
+        result = [None for _ in output_names]
 
-            pssr = outputs[pssr_index]
+        # remove batch dimensions
+        pssr = pssr.squeeze()
+        result[pssr_index] = pssr
 
-            result = [None for _ in output_names]
-
-            # remove batch dimensions
-            pssr = pssr.squeeze().cpu().numpy()
-            result[pssr_index] = pssr
-
-            return pssr
+        return result
 
     def save(self):
         """
