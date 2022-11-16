@@ -10,4 +10,5 @@ setup(install_requires=[
     "gunpowder @ git+https://github.com/funkey/gunpowder.git@patch-1.2.3",
     "matplotlib",
     "torch",
+    "napari",
 ])
