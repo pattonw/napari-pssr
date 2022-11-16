@@ -9,4 +9,5 @@ setup(install_requires=[
     "bioimageio.core @ git+https://github.com/bioimage-io/core-bioimage-io-python",
     "gunpowder @ git+https://github.com/funkey/gunpowder.git@patch-1.2.3",
     "matplotlib",
+    "torch",
 ])
