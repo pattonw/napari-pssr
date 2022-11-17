@@ -46,6 +46,7 @@ jobs:
       - name: Install library
         run: |
           pip install -e .
+          pip install -r requirements.txt
           pip install pyqt5
       - name: Test
         uses: GabrielBB/xvfb-action@v1
