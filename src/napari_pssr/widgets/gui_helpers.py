@@ -3,7 +3,7 @@ from magicgui.widgets import create_widget, FunctionGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from qtpy import QtWidgets
 
 class MplCanvas(FigureCanvasQTAgg):
 
