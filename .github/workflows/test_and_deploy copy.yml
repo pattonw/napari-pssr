@@ -46,7 +46,7 @@ jobs:
       - name: Test
         uses: GabrielBB/xvfb-action@v1
         with:
-          run: pytest -s -v --color=yes
+          run: tox
 
   deploy:
     # this will run when you have tagged a commit, starting with "v*"
