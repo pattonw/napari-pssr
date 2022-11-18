@@ -23,11 +23,15 @@ https://napari.org/plugins/stable/index.html
 
 ## Installation
 
-<!--
 You can install `napari-pssr` via [pip]:
 
     pip install napari-pssr
--->
+
+Some libraries need to be updated to the most recent version to get all features.
+These will be updated once they are released on pypi
+    
+    pip install git+https://github.com/bioimage-io/core-bioimage-io-python",
+    pip install git+https://github.com/funkey/gunpowder.git@patch-1.2.3",
 
 
 To install latest development version :
