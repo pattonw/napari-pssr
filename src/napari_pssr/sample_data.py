@@ -2,9 +2,9 @@ import tifffile
 
 from pathlib import Path
 
-LR_LARGE= Path(__file__).parent / "LR/large.tif"
-LR_8NM_EM = Path(__file__).parent / "LR/small.tif"
-HR_2NM_EM = Path(__file__).parent / "HR/small.tif"
+LR_LARGE= Path(__file__).parent / "sample_data/LR/large.tif"
+LR_8NM_EM = Path(__file__).parent / "sample_data/LR/small.tif"
+HR_2NM_EM = Path(__file__).parent / "sample_data/HR/small.tif"
 
 
 def lr_em_small():
