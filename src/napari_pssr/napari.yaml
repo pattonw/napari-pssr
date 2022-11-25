@@ -5,25 +5,25 @@ contributions:
     - id: napari-pssr.make_pssr_widget
       python_name: napari_pssr.widgets.pssr:ModelWidget
       title: Make model widget
-    - id: napari-pssr.lr_em
-      python_name: napari_pssr.sample_data:lr_em
+    - id: napari-pssr.lr_em_small
+      python_name: napari_pssr.sample_data:lr_em_small
       title: Load low res em for pssr
-    - id: napari-pssr.hr_em
-      python_name: napari_pssr.sample_data:hr_em
+    - id: napari-pssr.hr_em_small
+      python_name: napari_pssr.sample_data:hr_em_small
       title: Load high res em for pssr comparison
-    - id: napari-pssr.lr_large
-      python_name: napari_pssr.sample_data:lr_large
+    - id: napari-pssr.lr_em_large
+      python_name: napari_pssr.sample_data:lr_em_large
       title: Load low res em for large image
   sample_data:
-    - command: napari-pssr.lr_em
+    - command: napari-pssr.lr_em_small
       display_name: 8nm EM
-      key: lr_em.0
-    - command: napari-pssr.hr_em
+      key: lr_em_small
+    - command: napari-pssr.hr_em_small
       display_name: 2nm EM
-      key: hr_em.0
-    - command: napari-pssr.lr_large
+      key: hr_em_small
+    - command: napari-pssr.lr_em_large
       display_name: large 8nm EM
-      key: lr_em.1
+      key: lr_em_large
   widgets:
     - command: napari-pssr.make_pssr_widget
       display_name: PSSR Widget

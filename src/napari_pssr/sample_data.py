@@ -7,7 +7,7 @@ LR_8NM_EM = "/home/skar/Downloads/testing/LR/semi-synthetic_tSEM/semisynth_tSEM_
 HR_2NM_EM = "/home/skar/Downloads/testing/HR/semi-synthetic_tSEM/semisynth_tSEM_test_HR_56.tif"
 
 
-def lr_em():
+def lr_em_small():
     lr = tifffile.imread(LR_8NM_EM)
     return [
         (
@@ -22,7 +22,7 @@ def lr_em():
     ]
 
 
-def hr_em():
+def hr_em_small():
     hr = tifffile.imread(HR_2NM_EM)
     return [
         (
@@ -36,7 +36,7 @@ def hr_em():
         ),
     ]
 
-def lr_large():
+def lr_em_large():
     hr = tifffile.imread(LR_LARGE)
     return [
         (
