@@ -2,9 +2,9 @@ import tifffile
 
 from pathlib import Path
 
-LR_LARGE= "/home/skar/Work/Code/Projects/Napari/napari-pssr/src/napari_pssr/sample_data/LR/HitachiRegulus_ssEM_rat/HitachiRegulus_ssEM_rat_LR_1.tif"
-LR_8NM_EM = "/home/skar/Downloads/testing/LR/semi-synthetic_tSEM/semisynth_tSEM_test_LR_56.tif"
-HR_2NM_EM = "/home/skar/Downloads/testing/HR/semi-synthetic_tSEM/semisynth_tSEM_test_HR_56.tif"
+LR_LARGE= Path(__file__).parent / "LR/large.tif"
+LR_8NM_EM = Path(__file__).parent / "LR/small.tif"
+HR_2NM_EM = Path(__file__).parent / "HR/small.tif"
 
 
 def lr_em_small():
