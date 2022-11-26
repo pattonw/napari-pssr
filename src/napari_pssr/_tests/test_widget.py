@@ -1,12 +1,9 @@
-from napari_pssr.widgets.pssr import (
-    ModelWidget
-)
+from napari_pssr.widgets.pssr import ModelWidget
 import numpy as np
 
 
-def test_train_pssr_widget(make_napari_viewer, capsys):
+def test_train_pssr_widget(make_napari_viewer, capsys, models):
     viewer = make_napari_viewer()
     model_widget = ModelWidget(viewer)
-    my_widget = model_widget.create_train_widget(viewer)
-
-
+    
+    model_widget.load_model(models)
