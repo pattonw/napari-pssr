@@ -7,3 +7,7 @@ def test_train_pssr_widget(make_napari_viewer, capsys, models):
     model_widget = ModelWidget(viewer)
     
     model_widget.load_model(models)
+
+    # TODO: test train step
+
+    # TODO: test predict on sample data
