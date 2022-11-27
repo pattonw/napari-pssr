@@ -48,7 +48,7 @@ jobs:
           python -m pip install --upgrade pip
           $CONDA/bin/python -m pip install -e .
           $CONDA/bin/python -m pip uninstall torch torchvision
-          $CONDA/bin/conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch
+          $CONDA/bin/conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch -y
           #CONDA/bin/python -m pip install pyqt5
 
       - name: Run test
