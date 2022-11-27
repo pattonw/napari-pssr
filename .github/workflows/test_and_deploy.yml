@@ -34,12 +34,32 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: tlambert03/setup-qt-libs@v1
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda info
+        shell: bash -l {0}
+        run: conda info
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install -r requirements.txt
-          pip install pyqt5
+          $CONDA/bin/python -m pip install -e .
+          $CONDA/bin/python -m pip uninstall torch torchvision
+          $CONDA/bin/conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch
+          #CONDA/bin/python -m pip install pyqt5
+
+      - name: Run test
+        run: $CONDA/bin/python -m pytest -v
+
+      # - name: Install dependencies
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install -e .
+      #     pip install -r requirements.txt
+      #     pip install pyqt5
       - name: Test
         uses: GabrielBB/xvfb-action@v1
         with:
