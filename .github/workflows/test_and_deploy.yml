@@ -40,6 +40,7 @@ jobs:
           pip install -e .
           pip install -r requirements.txt
           pip install pyqt5
+          pip install fastai==1.0.55 pillow==6.1.0
       - name: Test
         uses: GabrielBB/xvfb-action@v1
         with:
